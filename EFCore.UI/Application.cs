@@ -30,53 +30,53 @@ internal class Application
     public void InitMainMenu()
     {
         var orders = this.mainMenu.AddItem("Orders");
-        this.mainMenu.AddItem("New order",this.NewOrder, orders);
+        this.mainMenu.AddItem("New order", this.NewOrder, orders);
         var sfo = this.mainMenu.AddItem("Search for an order", parent: orders);
         this.mainMenu.AddItem("Get all orders by date span", this.GetOrdersByDates, sfo);
-        this.mainMenu.AddItem("Get all orders by client id", this.GetOrdersByClientId, sfo);                    // not implemented
-        this.mainMenu.AddItem("Find all orders by a product id", this.GetOrdersByProductId, sfo);               // not implemented
+        this.mainMenu.AddItem("Get all orders by client id", this.GetOrdersByClientId, sfo);
+        this.mainMenu.AddItem("Find all orders by a product id", this.GetOrdersByProductId, sfo);
         this.mainMenu.AddItem("Show order details by order id", this.ShowOrderDetails, orders);
-        this.mainMenu.AddItem("Delete an order", this.DeleteOrder, orders);                                     // not implemented
-        
+        this.mainMenu.AddItem("Delete an order", this.DeleteOrder, orders);
+
         var products = this.mainMenu.AddItem("Products");
         this.mainMenu.AddItem("New product", this.NewProduct, products);
         var sfp = this.mainMenu.AddItem("Search for a product", parent: products);
         this.mainMenu.AddItem("Get a product by name or id", this.FindProductByNameOrId, sfp);
         this.mainMenu.AddItem("Get all the products by categories", this.GetAllProductsByCategory, sfp);
-        this.mainMenu.AddItem("Edit product", this.EditProduct, products);                                     // not implemented 
-        this.mainMenu.AddItem("Delete product", this.DeleteProduct, products);                                 // not implemented
+        this.mainMenu.AddItem("Edit product", this.EditProduct, products);                                     
+        this.mainMenu.AddItem("Delete product", this.DeleteProduct, products);
 
         var categories = this.mainMenu.AddItem("Categories");
         this.mainMenu.AddItem("New category", this.NewCategory, categories);
-        this.mainMenu.AddItem("Show all categories", this.ShowAllCategories, categories);                       // not implemented
-        this.mainMenu.AddItem("Edit category", this.EditCategory, categories);                                  // not implemented
-        this.mainMenu.AddItem("Delete category", this.DeleteCategory, categories);                              // not implemented
+        this.mainMenu.AddItem("Show all categories", this.ShowAllCategories, categories);
+        this.mainMenu.AddItem("Edit category", this.EditCategory, categories);                                  
+        this.mainMenu.AddItem("Delete category", this.DeleteCategory, categories);
 
         var clients = this.mainMenu.AddItem("Clients");
         this.mainMenu.AddItem("New client", this.NewClient, clients);
         var fc = this.mainMenu.AddItem("Find client", parent: clients);
-        this.mainMenu.AddItem("Find client by last name or id", this.FindClientByLastNameOrId, fc);             // not implemented
-        this.mainMenu.AddItem("Find client by email", this.FindClientByEmail, fc);                              // not implemented
-        this.mainMenu.AddItem("Find client by phone number", this.FindClientByPhone, fc);                       // not implemented
-        this.mainMenu.AddItem("Edit client info", this.EditClientInfo, clients);                                // not implemented
-        this.mainMenu.AddItem("Delete client", this.DeleteClient, clients);                                     // not implemented
+        this.mainMenu.AddItem("Find client by last name or id", this.FindClientByLastNameOrId, fc);             
+        this.mainMenu.AddItem("Find client by email", this.FindClientByEmail, fc);                              
+        this.mainMenu.AddItem("Find client by phone number", this.FindClientByPhone, fc);                       
+        this.mainMenu.AddItem("Edit client info", this.EditClientInfo, clients);                                
+        this.mainMenu.AddItem("Delete client", this.DeleteClient, clients);
 
         this.mainMenu.AddItem("Exit", () => this.eventLoop = false);
     }
-        
+
     #endregion
 
     #region Entry Point
 
     public void Run()
     {
-        while(this.eventLoop)
+        while (this.eventLoop)
         {
             try
             {
                 this.mainMenu.Show()?.Invoke();
             }
-            catch(InvalidDataException er)
+            catch (InvalidDataException er)
             {
                 Console.WriteLine(er.Message);
             }
@@ -114,7 +114,7 @@ internal class Application
             );
         }
         return this.products.GetProductById(productId);
-    }    
+    }
 
     private Client? SelectClient()
     {
@@ -129,7 +129,7 @@ internal class Application
         {
             List<Client> clients = this.clients.GetClientsByLastName(clientInfo!);
             AnsiConsole.Clear();
-            if(clients.Count < 1)
+            if (clients.Count < 1)
             {
                 Console.WriteLine("No such clients found!");
                 return null;
@@ -141,7 +141,7 @@ internal class Application
             );
         }
         return this.clients.GetClientById(clientId);
-    }    
+    }
 
     private Category? SelectCategory()
     {
@@ -218,42 +218,93 @@ internal class Application
             return;
         }
         Order? order = this.orders.FindById(orderId, true);
-        if(order is null)
+        if (order is null)
         {
             Console.WriteLine($"Unable to find an order by id [{orderId}]");
             return;
         }
-        Console.WriteLine(  $"Id        : {order.Id}\n" +
+        Console.WriteLine($"Id        : {order.Id}\n" +
                             $"Client    : {order.Client.LastName} {order.Client.FirstName}\n" +
                             $"Issue date: {order.IssueDateTime.Date}");
-        if(order.Items.Count < 1)
+        if (order.Items.Count < 1)
         {
             Console.WriteLine("No products in the order");
             return;
         }
-        foreach(var item in order.Items)
+        foreach (var item in order.Items)
             Console.WriteLine($" > product: [ {item.Product.Name,-60} ] quantity: [ {item.Quantity} ] price: [ {item.Price} ]");
-    }    
+    }
     private void GetOrdersByDates()
     {
         var startDate = ConsoleUtilities.ReadDateTime("Input start date: ");
         var endDate = ConsoleUtilities.ReadDateTime("Input end date: ");
-        var result = this.orders.Search(o => o.IssueDateTime.IsBetweenIncluded(startDate,endDate), true);
+        var result = this.orders.Search(o => o.IssueDateTime.IsBetweenIncluded(startDate, endDate), true);
         Console.WriteLine("All the orders made between specified dates:");
         foreach (Order order in result)
             Console.WriteLine($"Order id: [{order.Id,-4}] By client: [{order.Client.LastName,-12}{order.Client.FirstName,-12}] {order.IssueDateTime}");
     }
     private void GetOrdersByClientId()
     {
-        throw new NotImplementedException();
+        Console.WriteLine("Enter client id:");
+        int clientId = int.Parse(Console.ReadLine());
+
+        var orders = sfo.Orders.Where(o => o.Clients.Any(c => c.Id == clientId));
+        if (orders.Any())
+        {
+            foreach (var order in orders)
+            {
+                Console.WriteLine($"Order id:{order.Id},\n" +
+                    $"Order Date:{order.Date}");
+                Console.WriteLine("Clients:");
+                foreach (var client in order.Clients.Where(c => c.Id == clientId))
+                {
+                    Console.WriteLine($"{client.Name}");
+                }
+            }
+        }
+        else
+            Console.WriteLine("Nothing :(");
+
+        //throw new NotImplementedException();
     }
-    private void GetOrdersByProductId()
+    private void GetOrdersByProductId(SalesOrder sfo)
     {
-        throw new NotImplementedException();
-    }    
+        Console.WriteLine("Enter product id:");
+        int productId = int.Parse(Console.ReadLine());
+
+        var orders = sfo.Orders.Where(o => o.Products.Any(p => p.Id == productId));
+        if (orders.Any())
+        {
+            foreach (var order in orders)
+            {
+                Console.WriteLine($"Order id:{order.Id},\n" +
+                    $"Order Date:{order.Date}");
+                Console.WriteLine("Products:");
+                foreach (var product in order.Products.Where(p => p.Id == productId))
+                {
+                    Console.WriteLine($"{product.Name}\t Quantity:{product.Quantity}");
+                }
+            }
+        }
+        else
+            Console.WriteLine("Nothing :(");
+
+        //throw new NotImplementedException();
+    }
     private void DeleteOrder()
     {
-        throw new NotImplementedException();
+        int orderId = 1;
+        Order orderDelete = orders.FirstOrDefault(o => o.Id == orderId);
+
+        if (orderDelete == null)
+            Console.WriteLine($"Order with [{orderId}] id not found.");
+        else
+        {
+            orders.Remove(orderDelete);
+            Console.WriteLine($"Order with [{orderId}] id deleted.");
+        }
+
+        //throw new NotImplementedException();
     }
     #endregion
 
@@ -275,7 +326,7 @@ internal class Application
             {
                 product.Categories.Add(category);
                 Console.WriteLine($"[{product.Name}] has been assigned the category [{category.Name}]");
-            }            
+            }
         }
         this.products.Add(product);
     }
@@ -283,7 +334,7 @@ internal class Application
     private void FindProductByNameOrId()
     {
         Product? product = this.SelectProduct();
-        if(product is null)
+        if (product is null)
         {
             Console.WriteLine("No products found");
             return;
@@ -294,8 +345,7 @@ internal class Application
                           $"Name          : {product.Name}\n" +
                           $"Description   : {product.Description}\n" +
                           $"Price         : {product.Price}\n" +
-                          $"Categories    : {
-                           (product.Categories.Count < 1 ? "<NO CATEGORIES>" : string.Join(", ",product.Categories.Select(c => c.Name).ToList()))}");
+                          $"Categories    : {(product.Categories.Count < 1 ? "<NO CATEGORIES>" : string.Join(", ", product.Categories.Select(c => c.Name).ToList()))}");
     }
 
     private void GetAllProductsByCategory()
@@ -308,18 +358,48 @@ internal class Application
         }
         if (category.Products.Count < 1)
             this.categories.LoadProducts(category);
-        foreach(Product product in category.Products)
+        foreach (Product product in category.Products)
             Console.WriteLine($"product id: [ {product.Id,-4} ] name: [ {product.Name,-40} ] price: [ {product.Price} ]");
     }
 
-    private void EditProduct()
+    private void EditProduct(object sender, EventArgs e, List<Product> products)
     {
-        throw new NotImplementedException();
+        Console.WriteLine("Enter product id:");
+        int id = int.Parse(Console.ReadLine());
+
+        Product product = products.FirstOrDefault(p => p.Id == id);
+        if(product is null)
+        {
+            Console.WriteLine("There isn't any product with this id.");
+            return;
+        }
+        Console.WriteLine($"Edit product <{product.Name}>:");
+        Console.Write("Enter new name:");
+        string newName = Console.ReadLine();
+        if(!string.IsNullOrEmpty(newName)) { product.Name = newName; }
+
+        Console.WriteLine("Enter new price:");
+        string newPrice  = Console.ReadLine();
+        if(!string.IsNullOrEmpty(newPrice)) {  product.Price = newPrice; }
+        Console.WriteLine("Updating is finished!");
+
+        //throw new NotImplementedException();
     }
 
     private void DeleteProduct()
     {
-        throw new NotImplementedException();
+        int productId = 1;
+        Product productDelete = products.FirstOrDefault(p => p.Id == productId);
+
+        if (productDelete == null)
+            Console.WriteLine($"Product with [{productId}] id not found.");
+        else
+        {
+            products.Remove(productDelete);
+            Console.WriteLine($"Product with [{productId}] id deleted.");
+        }
+
+        //throw new NotImplementedException();
     }
 
     #endregion
@@ -330,23 +410,57 @@ internal class Application
     {
         Console.WriteLine("   --- Making a new category ---");
         Console.Write("Category name: ");
-        string catName = Console.ReadLine()!;
-        this.categories.Add(catName);        
+        string catName = Console.ReadLine();
+        this.categories.Add(catName);
     }
 
-    private void ShowAllCategories()
+    private void ShowAllCategories(object sender, EventArgs e, List<string> categories)
     {
-        throw new NotImplementedException();
+        Console.WriteLine("All categories:");
+        foreach (string category in categories)
+            Console.WriteLine(category);
+
+        //throw new NotImplementedException();
     }
 
-    private void EditCategory()
+    private void EditCategory(object sender, EventArgs e, List<Category> categories)
     {
-        throw new NotImplementedException();
+        Console.WriteLine("Enter category id:");
+        int id = int.Parse(Console.ReadLine());
+
+        Category category = categories.FirstOrDefault(c => c.Id == id);
+        if (category is null)
+        {
+            Console.WriteLine("There isn't any category with this id.");
+            return;
+        }
+        Console.WriteLine($"Edit category <{category.Name}>:");
+        Console.Write("Enter new name:");
+        string newName = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newName)) { category.Name = newName; }
+
+        Console.WriteLine("Enter new description:");
+        string newDescripton = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newDescripton)) { category.Description = newDescripton; }
+        Console.WriteLine("Updating is finished!");
+
+        //throw new NotImplementedException();
     }
 
     private void DeleteCategory()
     {
-        throw new NotImplementedException();
+        int categoryId = 1;
+        Category categoryDelete = categories.FirstOrDefault(c => c.Id == categoryId);
+
+        if (categoryDelete == null)
+            Console.WriteLine($"Category with [{categoryId}] id not found.");
+        else
+        {
+            categories.Remove(categoryDelete);
+            Console.WriteLine($"Category with [{categoryId}] id deleted.");
+        }
+
+        //throw new NotImplementedException();
     }
 
     #endregion
@@ -380,11 +494,114 @@ internal class Application
             Phone = string.IsNullOrEmpty(phone) ? null : phone
         });
     }
-    private void DeleteClient() => throw new NotImplementedException();
-    private void EditClientInfo() => throw new NotImplementedException();
-    private void FindClientByPhone() => throw new NotImplementedException();
-    private void FindClientByEmail() => throw new NotImplementedException();
-    private void FindClientByLastNameOrId() => throw new NotImplementedException();
+    private void DeleteClient()
+    {
+        int clientId = 1;
+        Client clientDelete = clients.FirstOrDefault(c => c.Id == clientId);
+
+        if (clientDelete == null)
+            Console.WriteLine($"Client with [{clientId}] id not found.");
+        else
+        {
+            clients.Remove(clientDelete);
+            Console.WriteLine($"Client with [{clientId}] id deleted.");
+        }
+
+        //throw new NotImplementedException(); 
+    }
+    private void EditClientInfo() 
+    {
+        Console.WriteLine("Enter client id:");
+        int id = int.Parse(Console.ReadLine());
+
+        Client client = clients.FirstOrDefault(c => c.Id == id);
+        if (client is null)
+        {
+            Console.WriteLine("There isn't any client with this id.");
+            return;
+        }
+        Console.WriteLine($"Edit client <{client.FullName}>:");
+        Console.Write("Enter new first name:");
+        string newFirstName = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newFirstName)) { client.FirstName = newFirstName; }
+        
+        Console.Write("Enter new last name:");
+        string newLastName = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newLastName)) { client.LastName = newLastName; }
+
+        Console.Write("Enter new email:");
+        string newEmail = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newEmail)) { client.Email = newEmail; }
+
+        Console.WriteLine("Enter new phone number:");
+        string newPhoneNumber = Console.ReadLine();
+        if (!string.IsNullOrEmpty(newPhoneNumber)) { client.PhoneNumber = newPhoneNumber; }
+        Console.WriteLine("Updating is finished!");
+
+        //throw new NotImplementedException(); 
+    }
+    private void FindClientByPhone() 
+    {
+        Console.WriteLine("Enter phone:");
+        string phones = Console.ReadLine();
+
+        List<Client> results = clients.Where(c => c.Phone == phones).ToList();
+
+        if (results.Count == 0)
+            Console.WriteLine("There isn't any client with this phone.");
+        else
+        {
+            if (results.Count == 1)
+                Console.WriteLine($"There is {results.Count} client:");
+            else Console.WriteLine($"There are {results.Count} clients:");
+            foreach (Client client in results)
+                Console.WriteLine($"Id: {client.Id}\n" +
+                    $"Name: {client.FirstName} {client.LastName}.\n");
+        }
+        //throw new NotImplementedException(); 
+    }
+    private void FindClientByEmail(object sender, EventArgs e, List<Client> clients)
+    {
+        Console.WriteLine("Enter email:");
+        string emails = Console.ReadLine();
+
+        List<Client> results = clients.Where(c => c.Email == emails).ToList();
+
+        if (results.Count == 0)
+            Console.WriteLine("There isn't any client with this email.");
+        else
+        {
+            if (results.Count == 1)
+                Console.WriteLine($"There is {results.Count} client:");
+            else Console.WriteLine($"There are {results.Count} clients:");
+            foreach (Client client in results)
+                Console.WriteLine($"Id: {client.Id}\n" +
+                    $"Name: {client.FirstName} {client.LastName}.\n");
+        }
+
+        //throw new NotImplementedException();
+    }
+    private void FindClientByLastNameOrId(object sender, EventArgs e, List<Client> clients)
+    {
+        Console.WriteLine("Enter last name or id:");
+        string lastNamesOrIds = Console.ReadLine();
+
+        List<Client> results = clients.Where(c => c.LastName == lastNamesOrIds || c.Id.ToString() == lastNamesOrIds).ToList();
+
+        if (results.Count == 0)
+            Console.WriteLine("There isn't any client with this last name or id.");
+        else
+        {
+            if (results.Count == 1)
+                Console.WriteLine($"There is {results.Count} client:");
+            else Console.WriteLine($"There are {results.Count} clients:");
+            foreach (Client client in results)
+                Console.WriteLine($"Id: {client.Id}\n" +
+                    $"Name: {client.FirstName} {client.LastName}.\n");
+        }
+
+        //throw new NotImplementedException();
+    }
 
     #endregion
 
